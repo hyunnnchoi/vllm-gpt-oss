@@ -52,3 +52,9 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
 - [HuggingFace Model Card](https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B)
 - [Official vLLM Documentation](https://docs.vllm.ai/)
 
+```
+sudo docker build \
+  --build-arg HF_TOKEN=$HUGGING_FACE_HUB_TOKEN \
+  --build-arg VLLM_REF=main \
+  -t potato4332/vllm-exaone-4.0:v0.0.1-debug .
+```

@@ -28,7 +28,7 @@ sudo docker run -d --name vllm-exaone \
   -e PYTHONHASHSEED=0 \
   -v /home/xsailor6/hmchoi/vllm-deployments/models/exaone-4.0-32b:/config_dir:ro \
   -v /home/xsailor6/hmchoi/lmcache_storage:/lmcache \
-  potato4332/vllm-exaone:v0.0.1 \
+  potato4332/vllm-exaone-4.0:v0.0.1-debug \
   --model /model \
   --served-model-name EXAONE-4.0-32B \
   --tensor-parallel-size 4 \
