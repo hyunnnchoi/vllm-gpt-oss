@@ -28,7 +28,7 @@ sudo docker run -d --name vllm-deepseek-r1-distill-qwen-32b \
   -e PYTHONHASHSEED=0 \
   -v /home/xsailor6/hmchoi/vllm-deployments/models/deepseek-r1-distill-qwen-32b:/config_dir:ro \
   -v /home/xsailor6/hmchoi/lmcache_storage:/lmcache \
-  potato4332/vllm-deepseek-r1:v0.0.1 \
+  potato4332/vllm-deepseek-r1:v0.0.1-debug \
   --model /model \
   --served-model-name DeepSeek-R1-Distill-Qwen-32B \
   --tensor-parallel-size 4 \

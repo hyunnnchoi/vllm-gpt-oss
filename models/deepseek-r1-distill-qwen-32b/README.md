@@ -22,4 +22,9 @@ Docker deployment for DeepSeek-R1-Distill-Qwen-32B model using custom vLLM.
 - [ ] Add model details
 - [ ] Add launch scripts
 - [ ] Test deployment
-
+```
+sudo docker build \
+  --build-arg HF_TOKEN=$HUGGING_FACE_HUB_TOKEN \
+  --build-arg VLLM_REF=main \
+  -t potato4332/vllm-deepseek-r1:v0.0.1-debug .
+```
