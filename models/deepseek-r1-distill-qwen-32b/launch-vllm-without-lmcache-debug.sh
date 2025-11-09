@@ -16,6 +16,7 @@ echo "Stopping and removing existing container..."
 sudo docker stop vllm-deepseek-r1-distill-qwen-32b 2>/dev/null
 sudo docker rm vllm-deepseek-r1-distill-qwen-32b 2>/dev/null
 
+# [NOTE, hyunnnchoi, 2025.11.09] Fixed OOM issue by adding max-model-len 32768 and adjusting gpu-memory-utilization to 0.8
 # 컨테이너 실행
 echo "Starting vLLM container..."
 sudo docker run -d --name vllm-deepseek-r1-distill-qwen-32b \
@@ -26,7 +27,8 @@ sudo docker run -d --name vllm-deepseek-r1-distill-qwen-32b \
   --model /model \
   --served-model-name DeepSeek-R1-Distill-Qwen-32B \
   --tensor-parallel-size 4 \
-  --gpu-memory-utilization 0.8
+  --gpu-memory-utilization 0.8 \
+  --max-model-len 32768
 
 # 컨테이너 시작 대기
 echo "Waiting for container to start..."

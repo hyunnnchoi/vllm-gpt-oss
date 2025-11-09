@@ -33,6 +33,7 @@ sudo docker run -d --name vllm-deepseek-r1-distill-qwen-32b \
   --served-model-name DeepSeek-R1-Distill-Qwen-32B \
   --tensor-parallel-size 4 \
   --gpu-memory-utilization 0.8 \
+  --max-model-len 32768 \
   --kv-transfer-config '{"kv_connector":"LMCacheConnectorV1","kv_role":"kv_both"}'
 
 # 컨테이너 시작 대기
