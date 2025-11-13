@@ -1,8 +1,6 @@
 #!/bin/bash
 # [NOTE, hyunnnchoi, 2025.11.13] Custom vllm + LMCache image without baked model
 
-set -e
-
 # [NOTE, hyunnnchoi, 2025.11.13] Basic configuration
 IMAGE_NAME="${IMAGE_NAME:-potato4332/vanilla-vllm:v0.11.0}"
 # MODEL_NAME="${MODEL_NAME:-meta-llama/Llama-3.2-1B}"
@@ -25,9 +23,11 @@ mkdir -p vllm_logs
 mkdir -p nsys_reports
 
 # [NOTE, hyunnnchoi, 2025.11.13] Start vLLM server with TP=4
+# [NOTE, hyunnnchoi, 2025.11.13] Added Huggingface cache mount to avoid re-downloading models
 sudo docker run -d --name vllm --gpus all --ipc=host \
   -p 8000:8000 \
   -v /home/xsailor6/hmchoi/ELIS/data:/data \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
   -e HF_TOKEN="${HF_TOKEN}" \
   -e VLLM_REF=${VLLM_REF} \
   -e LMCACHE_REF=${LMCACHE_REF} \

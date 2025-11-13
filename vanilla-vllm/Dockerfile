@@ -33,7 +33,7 @@ RUN git checkout ${VLLM_REF} && \
 # ====== Clone and install custom LMCache ======
 # [NOTE, hyunnnchoi, 2025.11.13] Set TORCH_CUDA_ARCH_LIST to support various GPU architectures
 # 7.0: V100, 7.5: T4/RTX 20xx, 8.0: A100, 8.6: RTX 30xx/A10/A30/A40, 8.9: RTX 40xx/L4/L40, 9.0: H100/H200
-RUN git clone https://github.com/pengujoa/LMCache.git /lmcache
+RUN git clone https://github.com/hyunnnchoi/LMCache.git /lmcache
 WORKDIR /lmcache
 RUN git checkout ${LMCACHE_REF} && \
     TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0" python3 -m pip install --no-cache-dir -e "."
@@ -42,46 +42,25 @@ RUN git checkout ${LMCACHE_REF} && \
 WORKDIR /workspace
 
 # ====== Startup script to fetch latest code ======
+# [NOTE, hyunnnchoi, 2025.11.13] Simplified startup script similar to Midm version
 RUN cat <<'EOF' >/start.sh
 #!/bin/bash
 set -e
-
-echo "=========================================="
-echo "=== Updating Custom Repositories ==="
-echo "=========================================="
-
-# Update vLLM
-echo ""
-echo "--- Updating vLLM ---"
+echo "=== Updating vLLM code ==="
 cd /vllm
 git fetch --all
 git reset --hard origin/${VLLM_REF:-main}
 git checkout ${VLLM_REF:-main}
-VLLM_COMMIT=$(git rev-parse HEAD)
-VLLM_BRANCH=$(git branch --show-current)
-echo "vLLM Branch: ${VLLM_BRANCH}"
-echo "vLLM Commit: ${VLLM_COMMIT}"
-echo "vLLM Repo: https://github.com/hyunnnchoi/vllm.git"
+echo "=== vLLM commit: $(git rev-parse HEAD) ==="
 
-# Update LMCache
-echo ""
-echo "--- Updating LMCache ---"
+echo "=== Updating LMCache code ==="
 cd /lmcache
 git fetch --all
 git reset --hard origin/${LMCACHE_REF:-dev}
 git checkout ${LMCACHE_REF:-dev}
-LMCACHE_COMMIT=$(git rev-parse HEAD)
-LMCACHE_BRANCH=$(git branch --show-current)
-echo "LMCache Branch: ${LMCACHE_BRANCH}"
-echo "LMCache Commit: ${LMCACHE_COMMIT}"
-echo "LMCache Repo: https://github.com/pengujoa/LMCache.git"
+echo "=== LMCache commit: $(git rev-parse HEAD) ==="
 
-echo ""
-echo "=========================================="
-echo "=== Starting Command ==="
-echo "=========================================="
-
-# Execute the passed command
+echo "=== Starting vLLM server ==="
 cd /workspace
 exec "$@"
 EOF
