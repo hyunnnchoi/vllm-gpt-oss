@@ -78,11 +78,13 @@ echo "  - Test server: curl http://localhost:8000/v1/models"
 echo "  - Stop server: sudo docker stop vllm"
 echo ""
 
-# [NOTE, hyunnnchoi, 2025.12.07] Follow logs in real-time
+# [NOTE, hyunnnchoi, 2025.12.08] Follow logs in real-time with tee to save logs
 read -p "📊 Follow logs in real-time? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo docker logs -f vllm
+    LOG_FILE="vllm_logs/vllm_$(date +%Y%m%d_%H%M%S).log"
+    echo "💾 Logs will be saved to: ${LOG_FILE}"
+    sudo docker logs -f vllm 2>&1 | tee "${LOG_FILE}"
 fi
 
