@@ -16,6 +16,7 @@
 #     VLLM_REF            | v0.6.0
 #     LMCACHE_REPO        | https://github.com/user/LMCache.git
 #     LMCACHE_REF         | main
+#     HF_TOKEN            | hf_your_token_here
 #
 #   Default values (if not specified):
 #     VLLM_REPO: https://github.com/hyunnnchoi/vllm.git
