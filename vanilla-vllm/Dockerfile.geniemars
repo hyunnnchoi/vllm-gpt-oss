@@ -1,13 +1,44 @@
 # [NOTE, hyunnnchoi, 2025.12.04] Custom vllm + LMCache image for GenieMars (git fetch blocked, use clone + rsync)
+# [NOTE, hyunnnchoi, 2025.12.08] Environment variables for flexible repository configuration
+#
+# Usage:
+#   Build time (optional):
+#     docker build --build-arg VLLM_REPO=https://github.com/user/vllm.git \
+#                  --build-arg VLLM_REF=main \
+#                  --build-arg LMCACHE_REPO=https://github.com/user/LMCache.git \
+#                  --build-arg LMCACHE_REF=dev \
+#                  -f Dockerfile.geniemars -t vllm-geniemars:latest .
+#
+#   Runtime (Backend.ai environment variables):
+#     Variable            | Value (example)
+#     --------------------|----------------------------------------
+#     VLLM_REPO           | https://github.com/user/vllm.git
+#     VLLM_REF            | v0.6.0
+#     LMCACHE_REPO        | https://github.com/user/LMCache.git
+#     LMCACHE_REF         | main
+#
+#   Default values (if not specified):
+#     VLLM_REPO: https://github.com/hyunnnchoi/vllm.git
+#     VLLM_REF: main
+#     LMCACHE_REPO: https://github.com/hyunnnchoi/LMCache.git
+#     LMCACHE_REF: dev
+#
 FROM vllm/vllm-openai:v0.11.0
 
 # ====== Build arguments / environment ======
+# [NOTE, hyunnnchoi, 2025.12.08] Added environment variables for repository URLs and branches with main as fallback
 ARG VLLM_REF=main
 ARG LMCACHE_REF=dev
+ARG VLLM_REPO=https://github.com/hyunnnchoi/vllm.git
+ARG LMCACHE_REPO=https://github.com/hyunnnchoi/LMCache.git
 
 ENV HF_HUB_ENABLE_HF_TRANSFER=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    VLLM_REPO=${VLLM_REPO} \
+    LMCACHE_REPO=${LMCACHE_REPO} \
+    VLLM_REF=${VLLM_REF} \
+    LMCACHE_REF=${LMCACHE_REF}
 
 # ====== Install base tools ======
 # [NOTE, hyunnnchoi, 2025.12.04] Added rsync for efficient file synchronization
@@ -25,8 +56,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # ====== Uninstall existing vLLM and install custom vLLM ======
+# [NOTE, hyunnnchoi, 2025.12.08] Use VLLM_REPO environment variable for flexible repository URL
 RUN python3 -m pip uninstall -y vllm || true
-RUN git clone https://github.com/hyunnnchoi/vllm.git /vllm
+RUN git clone ${VLLM_REPO} /vllm
 WORKDIR /vllm
 RUN git checkout ${VLLM_REF} && \
     python3 -m pip install --no-cache-dir -e "."
@@ -34,7 +66,8 @@ RUN git checkout ${VLLM_REF} && \
 # ====== Clone and install custom LMCache ======
 # [NOTE, hyunnnchoi, 2025.11.13] Set TORCH_CUDA_ARCH_LIST to support various GPU architectures
 # 7.0: V100, 7.5: T4/RTX 20xx, 8.0: A100, 8.6: RTX 30xx/A10/A30/A40, 8.9: RTX 40xx/L4/L40, 9.0: H100/H200
-RUN git clone https://github.com/hyunnnchoi/LMCache.git /lmcache
+# [NOTE, hyunnnchoi, 2025.12.08] Use LMCACHE_REPO environment variable for flexible repository URL
+RUN git clone ${LMCACHE_REPO} /lmcache
 WORKDIR /lmcache
 RUN git checkout ${LMCACHE_REF} && \
     TORCH_CUDA_ARCH_LIST="7.0;7.5;8.0;8.6;8.9;9.0" python3 -m pip install --no-cache-dir -e "."
@@ -44,27 +77,38 @@ WORKDIR /workspace
 
 # ====== Startup script to fetch latest code ======
 # [NOTE, hyunnnchoi, 2025.12.04] Use clone + rsync instead of fetch/pull (GenieMars network policy)
+# [NOTE, hyunnnchoi, 2025.12.08] Use environment variables for repository URLs with fallback to default repos
 RUN cat <<'EOF' >/start.sh
 #!/bin/bash
 set -e
 
+# Default repository URLs (fallback)
+: ${VLLM_REPO:=https://github.com/hyunnnchoi/vllm.git}
+: ${LMCACHE_REPO:=https://github.com/hyunnnchoi/LMCache.git}
+: ${VLLM_REF:=main}
+: ${LMCACHE_REF:=main}
+
 echo "=== Updating vLLM code ==="
+echo "Repository: $VLLM_REPO"
+echo "Branch/Ref: $VLLM_REF"
 cd /tmp
 rm -rf vllm-temp
-git clone https://github.com/hyunnnchoi/vllm.git vllm-temp
+git clone $VLLM_REPO vllm-temp
 cd vllm-temp
-git checkout ${VLLM_REF:-main}
+git checkout ${VLLM_REF}
 VLLM_COMMIT=$(git rev-parse HEAD)
 # Sync only source files, preserve build artifacts
 rsync -av --exclude='.git' --exclude='build/' --exclude='*.so' --exclude='__pycache__/' /tmp/vllm-temp/ /vllm/
 echo "=== vLLM updated to commit: $VLLM_COMMIT ==="
 
 echo "=== Updating LMCache code ==="
+echo "Repository: $LMCACHE_REPO"
+echo "Branch/Ref: $LMCACHE_REF"
 cd /tmp
 rm -rf lmcache-temp
-git clone https://github.com/hyunnnchoi/LMCache.git lmcache-temp
+git clone $LMCACHE_REPO lmcache-temp
 cd lmcache-temp
-git checkout ${LMCACHE_REF:-dev}
+git checkout ${LMCACHE_REF}
 LMCACHE_COMMIT=$(git rev-parse HEAD)
 # Sync only source files, preserve build artifacts
 rsync -av --exclude='.git' --exclude='build/' --exclude='*.so' --exclude='__pycache__/' /tmp/lmcache-temp/ /lmcache/
