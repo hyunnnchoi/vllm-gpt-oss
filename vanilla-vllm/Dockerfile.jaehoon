@@ -2,7 +2,8 @@
 FROM vllm/vllm-openai:v0.11.0
 
 # ====== Build arguments / environment ======
-ARG VLLM_REF=main
+# [NOTE, hyunnnchoi, 2025.12.01] Changed to use jaehoon-ltr branch instead of main
+ARG VLLM_REF=jaehoon-ltr
 ARG LMCACHE_REF=dev
 
 ENV HF_HUB_ENABLE_HF_TRANSFER=1 \
@@ -49,8 +50,8 @@ set -e
 echo "=== Updating vLLM code ==="
 cd /vllm
 git fetch --all
-git reset --hard origin/${VLLM_REF:-main}
-git checkout ${VLLM_REF:-main}
+git reset --hard origin/${VLLM_REF:-jaehoon-ltr}
+git checkout ${VLLM_REF:-jaehoon-ltr}
 echo "=== vLLM commit: $(git rev-parse HEAD) ==="
 
 echo "=== Updating LMCache code ==="
@@ -70,3 +71,4 @@ RUN chmod +x /start.sh
 # ====== Use custom entrypoint ======
 ENTRYPOINT ["/start.sh"]
 CMD ["/bin/bash"]
+

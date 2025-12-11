@@ -20,7 +20,7 @@ IMAGE_NAME="${IMAGE_NAME:-potato4332/vanilla-vllm:v0.11.0-debug}"
 MODEL_NAME="${MODEL_NAME:-upstage/SOLAR-10.7B-v1.0}"
 
 
-HF_TOKEN="${HF_TOKEN:-}"
+HF_TOKEN="${HF_TOKEN:-hf_YOUR_TOKEN_HERE}"
 VLLM_REF="${VLLM_REF:-main}"
 LMCACHE_REF="${LMCACHE_REF:-dev}"
 ENABLE_NSYS="${ENABLE_NSYS:-false}"
