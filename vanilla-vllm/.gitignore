@@ -1,0 +1,10 @@
+# Log directories
+hol_logs/
+vllm_logs/
+
+# Report directories
+nsys_reports/
+
+# Benchmark results
+benchmark_results/
+

@@ -10,19 +10,25 @@
 #                  -f Dockerfile.geniemars -t vllm-geniemars:latest .
 #
 #   Runtime (Backend.ai environment variables):
-#     Variable            | Value (example)
-#     --------------------|----------------------------------------
-#     VLLM_REPO           | https://github.com/user/vllm.git
-#     VLLM_REF            | v0.6.0
-#     LMCACHE_REPO        | https://github.com/user/LMCache.git
-#     LMCACHE_REF         | main
-#     HF_TOKEN            | hf_your_token_here
+#     Variable                 | Value (example)
+#     -------------------------|----------------------------------------
+#     VLLM_REPO                | https://github.com/user/vllm.git
+#     VLLM_REF                 | v0.6.0
+#     LMCACHE_REPO             | https://github.com/user/LMCache.git
+#     LMCACHE_REF              | main
+#     HF_TOKEN                 | hf_your_token_here
+#     MODEL_NAME               | meta-llama/Llama-3.1-8B-Instruct
+#     TENSOR_PARALLEL_SIZE     | 4
+#     GPU_MEMORY_UTILIZATION   | 0.8
 #
 #   Default values (if not specified):
 #     VLLM_REPO: https://github.com/hyunnnchoi/vllm.git
 #     VLLM_REF: main
 #     LMCACHE_REPO: https://github.com/hyunnnchoi/LMCache.git
 #     LMCACHE_REF: dev
+#     MODEL_NAME: meta-llama/Llama-3.1-8B-Instruct
+#     TENSOR_PARALLEL_SIZE: 4
+#     GPU_MEMORY_UTILIZATION: 0.8
 #
 FROM vllm/vllm-openai:v0.11.0
 
@@ -79,6 +85,7 @@ WORKDIR /workspace
 # ====== Startup script to fetch latest code ======
 # [NOTE, hyunnnchoi, 2025.12.04] Use clone + rsync instead of fetch/pull (GenieMars network policy)
 # [NOTE, hyunnnchoi, 2025.12.08] Use environment variables for repository URLs with fallback to default repos
+# [NOTE, hyunnnchoi, 2025.12.11] Added auto-start vllm serve with environment variable configuration
 RUN cat <<'EOF' >/start.sh
 #!/bin/bash
 set -e
@@ -121,12 +128,30 @@ rm -rf /tmp/vllm-temp /tmp/lmcache-temp
 
 echo "=== Starting vLLM server ==="
 cd /workspace
-exec "$@"
+
+# If MODEL_NAME is set, auto-start vllm serve
+if [ -n "$MODEL_NAME" ]; then
+    echo "Model: $MODEL_NAME"
+    echo "Tensor Parallel Size: ${TENSOR_PARALLEL_SIZE:-4}"
+    echo "GPU Memory Utilization: ${GPU_MEMORY_UTILIZATION:-0.8}"
+    
+    # Build vllm serve command
+    VLLM_CMD="vllm serve $MODEL_NAME"
+    VLLM_CMD="$VLLM_CMD --tensor-parallel-size ${TENSOR_PARALLEL_SIZE:-4}"
+    VLLM_CMD="$VLLM_CMD --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION:-0.8}"
+    
+    echo "=== Executing: $VLLM_CMD ==="
+    exec $VLLM_CMD
+else
+    # If no MODEL_NAME, execute passed command or default CMD
+    exec "$@"
+fi
 EOF
 
 RUN chmod +x /start.sh
 
 # ====== Use custom entrypoint ======
+# [NOTE, hyunnnchoi, 2025.12.11] Auto-start vllm serve if MODEL_NAME is set, otherwise run bash
 ENTRYPOINT ["/start.sh"]
 CMD ["/bin/bash"]
 

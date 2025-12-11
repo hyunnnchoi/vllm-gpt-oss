@@ -17,8 +17,9 @@ IMAGE_NAME="${IMAGE_NAME:-potato4332/vanilla-vllm:v0.11.0-debug}"
 # MODEL_NAME="${MODEL_NAME:-facebook/opt-2.7b}" # FlexAttention이라 터짐;; 안쓰는게 나을수도
 # MODEL_NAME="${MODEL_NAME:-EleutherAI/gpt-neox-20b}"
 # MODEL_NAME="${MODEL_NAME:-google/gemma-7b}"
-MODEL_NAME="${MODEL_NAME:-upstage/SOLAR-10.7B-v1.0}"
-
+# MODEL_NAME="${MODEL_NAME:-upstage/SOLAR-10.7B-v1.0}"
+# ================================
+MODEL_NAME="${MODEL_NAME:-meta-llama/Llama-3.1-8B}"
 
 HF_TOKEN="${HF_TOKEN:-hf_YOUR_TOKEN_HERE}"
 VLLM_REF="${VLLM_REF:-main}"
@@ -32,31 +33,42 @@ sudo docker rm vllm 2>/dev/null || true
 # [NOTE, hyunnnchoi, 2025.11.13] Create log and report directories
 mkdir -p vllm_logs
 mkdir -p nsys_reports
+mkdir -p hol_logs
 
 # [NOTE, hyunnnchoi, 2025.11.13] Start vLLM server with TP=4
 # [NOTE, hyunnnchoi, 2025.11.13] Added Huggingface cache mount to avoid re-downloading models
+# [NOTE, hyunnnchoi, 2025.12.11] Added HOL blocking tracking environment variables
 sudo docker run -d --name vllm --gpus all --ipc=host \
   -p 8000:8000 \
   -v /home/xsailor6/hmchoi/ELIS/data:/data \
   -v ~/.cache/huggingface:/root/.cache/huggingface \
+  -v $(pwd)/hol_logs:/workspace/hol_logs \
   -e HF_TOKEN="${HF_TOKEN}" \
   -e VLLM_REF=${VLLM_REF} \
   -e LMCACHE_REF=${LMCACHE_REF} \
   -e VLLM_LOGGING_LEVEL=DEBUG \
+  -e VLLM_HOL_TRACKING=1 \
+  -e VLLM_HOL_LOG_DIR=/workspace/hol_logs \
   ${IMAGE_NAME} \
   vllm serve ${MODEL_NAME} \
   --tensor-parallel-size 4 \
-  --gpu-memory-utilization 0.8
-
+  --gpu-memory-utilization 0.8 \
+  --enable-auto-tool-choice \
+  --tool-call-parser hermes 
+  
 # [NOTE, hyunnnchoi, 2025.11.16] Start vLLM server with TP=2 using GPU 2-3 only
+# [NOTE, hyunnnchoi, 2025.12.11] Added HOL blocking tracking environment variables
 # sudo docker run -d --name vllm --gpus '"device=2,3"' --ipc=host \
 #   -p 8000:8000 \
 #   -v /home/xsailor6/hmchoi/ELIS/data:/data \
 #   -v ~/.cache/huggingface:/root/.cache/huggingface \
+#   -v $(pwd)/hol_logs:/workspace/hol_logs \
 #   -e HF_TOKEN="${HF_TOKEN}" \
 #   -e VLLM_REF=${VLLM_REF} \
 #   -e LMCACHE_REF=${LMCACHE_REF} \
 #   -e VLLM_LOGGING_LEVEL=DEBUG \
+#   -e VLLM_HOL_TRACKING=1 \
+#   -e VLLM_HOL_LOG_DIR=/workspace/hol_logs \
 #   ${IMAGE_NAME} \
 #   vllm serve ${MODEL_NAME} \
 #   --tensor-parallel-size 2 \
